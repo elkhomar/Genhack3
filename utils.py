@@ -114,26 +114,6 @@ def G_wasserstrain(latent_dim, x, G, D, G_optimizer, device, distr="normal", log
 
     return G_loss.data.item()
 
-# Attempt at Energy Distance model
-def ED_model_step(latent_dim, x, G, G_optimizer, device, distr="normal", log=None):
-
-    G.zero_grad()
-
-    z = sample_from(distr, x.shape[0], latent_dim, device)
-
-    G_output = G(z)
-
-    G_loss = energy_distance(x, G_output)
-
-    G_loss.backward()
-
-    G_optimizer.step()
-
-    if log is not None:
-        generator_log(log, x, G_output, G_loss)
-
-    return G_loss.data.item()
-
 def energy_distance(x, y):
     n=x.shape[0]
     m=y.shape[0]
@@ -152,6 +132,26 @@ def energy_distance(x, y):
 
     result = 2*A/(n*m) - C/(m**2)  - B/(n**2) 
     return result
+
+# Attempt at Energy Distance model
+def ED_model_step(latent_dim, x, G, G_optimizer, device, distr="normal", log=None):
+
+    G.zero_grad()
+
+    z = sample_from(distr, x.shape[0], latent_dim, device)
+
+    G_output = G(z)
+
+    G_loss = energy_distance(x.to(device), G_output)
+
+    G_loss.backward()
+
+    G_optimizer.step()
+
+    if log is not None:
+        generator_log(log, x.to(device), G_output, G_loss)
+
+    return G_loss.data.item()
 
 def make_fake_data(distr, n, latent_dim, G):
     z = sample_from(distr, n, latent_dim, "cpu")
