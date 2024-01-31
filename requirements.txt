@@ -1,1 +1,5 @@
 numpy==1.26.3
+torch==2.1.2
+torchcfm==1.0.5
+torchdyn==1.0.6
+scikit-learn==1.1.2
