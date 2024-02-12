@@ -4,6 +4,11 @@ import os
 from scipy import stats
 import matplotlib.pyplot as plt
 import torch.nn as nn
+from ot.sliced import sliced_wasserstein_distance
+
+def save_models(G, D, folder):
+    torch.save(G.state_dict(), os.path.join(folder,'G.pth'))
+    torch.save(D.state_dict(), os.path.join(folder,'D.pth'))
 
 def D_train(latent_dim, x, G, D, D_optimizer, device, distr="normal", log=None):
     z = sample_from(distr, x.shape[0], latent_dim, device)
@@ -165,3 +170,67 @@ def make_fake_data_renorm(distr, n, latent_dim, G, means, stds):
     fake_data = fake_samples.cpu().data.numpy()
     fake_data = fake_data * np.array(stds.cpu()) + np.array(means.cpu())
     return fake_data
+
+# def plot_fake_data(fake_data, log, folder="ecdfs/"):
+#     fig, ax = plt.subplots(figsize = (12,6))
+    
+#     for k in range(fake_data.shape[1]):
+#         yield_ind = X.columns[k]
+#         plt.subplot(4, 4, 5*k + 1)
+
+#         samples[k].plot.density()
+#         X[yield_ind].plot.density()
+
+#         xmin, xmax = np.min(X[yield_ind]), np.max(X[yield_ind])
+#         plt.xlim(xmin, xmax)
+
+#         plt.title(yield_ind + " histogram")
+#         plt.xlabel("Crop yields in (hundres of tons ?)")
+#         plt.ylabel("Density")
+#         plt.legend()
+
+#     # Plotting scatter plots for correlation
+#     for i in range(samples.shape[1]):
+#         for j in range(samples.shape[1]):
+#             if i != j:
+#                 plt.subplot(4, 4, 1 + i + 4*j)
+
+#                 x = samples.iloc[:, i]
+#                 y = samples.iloc[:, j]
+#                 plt.scatter(x, y, alpha=0.5)
+
+#                 x = X.iloc[:, i]
+#                 y = X.iloc[:, j]
+#                 plt.scatter(x, y, alpha=0.5)
+
+#                 plt.title(f"{X.columns[i]} vs {X.columns[j]}")
+#                 plt.xlabel(X.columns[i])
+#                 plt.ylabel(X.columns[j])
+
+#     plt.suptitle("Fitting the marginal histogram and Scatter plots for Correlation")
+#     plt.tight_layout()
+#     plt.show()
+
+#     ax.set_xlabel('Value')
+#     ax.set_ylabel('Empirical CDF')
+#     ax.legend(["X1", "X2", "X3", "X4"])
+
+#     writer, idx, ep, num_batches = log
+#     writer.add_figure(folder + "{:04}".format(idx), fig,
+#                             global_step=ep * num_batches + idx)
+#     plt.close(fig)
+
+def metrics_log(original_data, fake_data, log, folder="metrics/"):
+    writer, idx, ep, num_batches = log
+    writer.add_scalar(folder + "sliced_wasserstein", sliced_wasserstein_distance(original_data, fake_data, n_projections=1000),
+                      global_step=ep * num_batches + idx)
+    
+def metrics_log_train(original_data, fake_data, log, folder="metrics/"):
+    writer, idx, ep, num_batches = log
+    writer.add_scalar(folder + "sliced_wasserstein_train", sliced_wasserstein_distance(original_data, fake_data, n_projections=1000),
+                      global_step=ep * num_batches + idx)
+    
+def metrics_log_test(original_data, fake_data, log, folder="metrics/"):
+    writer, idx, ep, num_batches = log
+    writer.add_scalar(folder + "sliced_wasserstein_test", sliced_wasserstein_distance(original_data, fake_data, n_projections=1000),
+                      global_step=ep * num_batches + idx)
